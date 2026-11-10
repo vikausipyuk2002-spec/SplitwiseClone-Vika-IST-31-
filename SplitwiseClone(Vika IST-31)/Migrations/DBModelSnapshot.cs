@@ -11,6 +11,7 @@ using SplitwiseClone.Data;
 namespace SplitwiseClone_Vika_IST_31_.Migrations
 {
     [DbContext(typeof(DB))]
+    [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     partial class DBModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
