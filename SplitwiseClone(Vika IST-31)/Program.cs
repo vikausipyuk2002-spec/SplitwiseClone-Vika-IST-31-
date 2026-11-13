@@ -1,65 +1,58 @@
-﻿using FluentValidation;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Identity;
+using FluentValidation;
 using SplitwiseClone.Data;
 using SplitwiseClone.DTOs;
 using SplitwiseClone.Exceptions;
 using SplitwiseClone.Repositories;
 using SplitwiseClone.Services;
 using SplitwiseClone.Validators;
-using System.Text;
-Console.OutputEncoding = Encoding.UTF8;
-Console.InputEncoding = Encoding.UTF8;
 
-var services = new ServiceCollection();
-services.AddLogging();
-services.AddDbContext<DB>();
-services.AddIdentityCore<IdentityUser>()
-    .AddEntityFrameworkStores<DB>();
-services.AddScoped<IUnitOfWork, UnitOfWork>();
-services.AddScoped<IExpenseService, ExpenseService>();
-services.AddScoped<IAuthService, AuthService>();
+var builder = WebApplication.CreateBuilder(args);
 
-// НОВЕ: Реєстрація валідаторів FluentValidation
-services.AddValidatorsFromAssemblyContaining<RegisterDtoValidator>();
+// Отримуємо налаштування з appsettings.json
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-var serviceProvider = services.BuildServiceProvider();
-var authService = serviceProvider.GetRequiredService<IAuthService>();
+// Підключення сервісів
+builder.Services.AddDbContext<DB>(options => options.UseNpgsql(connectionString));
+builder.Services.AddIdentityCore<IdentityUser>().AddEntityFrameworkStores<DB>();
 
-Console.WriteLine("Пробуємо зареєструвати користувача...");
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IExpenseService, ExpenseService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddValidatorsFromAssemblyContaining<RegisterDtoValidator>();
 
-// НОВЕ: Створила DTO об'єкт для передачі даних
-var registerDto = new RegisterDto
+// Додаємо Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+
+// Вмикаємо Swagger
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.MapPost("/api/auth/register", async (RegisterDto dto, IAuthService authService) =>
 {
-    Email = "student2@test.com", // Змінила пошту, бо перший вже є в базі
-    Password = "StrongPass123!"
-};
+    try
+    {
+        var result = await authService.RegisterAsync(dto);
+        if (result.Succeeded) return Results.Ok("Користувача успішно зареєстровано!");
+        return Results.BadRequest(result.Errors.Select(e => e.Description));
+    }
+    catch (CustomValidationException ex)
+    {
+        return Results.BadRequest(ex.Errors);
+    }
+});
 
-// НОВЕ: Блок try-catch для перехоплення нашої CustomValidationException
-try
+app.MapPost("/api/auth/login", async (string email, string password, IAuthService authService) =>
 {
-    var regResult = await authService.RegisterAsync(registerDto); // Передаємо DTO замість двох рядків
+    bool isLogged = await authService.LoginAsync(email, password);
+    return isLogged ? Results.Ok("Успішний вхід!") : Results.Unauthorized();
+});
 
-    if (regResult.Succeeded)
-    {
-        Console.WriteLine("Користувача успішно зареєстровано!");
-    }
-    else
-    {
-        Console.WriteLine("Помилка реєстрації бази даних: " + string.Join(", ", regResult.Errors.Select(e => e.Description)));
-    }
-}
-catch (CustomValidationException ex)
-{
-    // Якщо FluentValidation знайде помилки, програма зайде сюди
-    Console.WriteLine("Помилка валідації DTO:");
-    foreach (var error in ex.Errors)
-    {
-        Console.WriteLine($"- {error}");
-    }
-}
-
-Console.WriteLine("Перевіряємо пароль...");
-bool isLogged = await authService.LoginAsync("student2@test.com", "StrongPass123!");
-Console.WriteLine(isLogged ? "Успішний вхід!" : "Невірний логін або пароль.");
-Console.WriteLine("Шар бізнес-логіки (BLL) успішно підключено!");
+app.Run(); 

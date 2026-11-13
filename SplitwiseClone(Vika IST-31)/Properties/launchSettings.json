@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "SplitwiseClone(Vika IST-31)": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:12266;http://localhost:12267"
+    }
+  }
+}

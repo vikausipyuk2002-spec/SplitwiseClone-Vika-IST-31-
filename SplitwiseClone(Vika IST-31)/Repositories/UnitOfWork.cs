@@ -11,9 +11,10 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<Expense> Expenses { get; private set; }
     public IRepository<Group> Groups { get; private set; }
 
-    public UnitOfWork()
+   
+    public UnitOfWork(DB context)
     {
-        _context = new DB();
+        _context = context;
         Users = new Repository<User>(_context);
         Expenses = new Repository<Expense>(_context);
         Groups = new Repository<Group>(_context);
