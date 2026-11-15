@@ -24,7 +24,7 @@ builder.Services.AddScoped<IExpenseService, ExpenseService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterDtoValidator>();
 
-
+// Підключаємо контролери (GroupsController, HealthController)
 builder.Services.AddControllers();
 
 // Додаємо Swagger
@@ -60,5 +60,15 @@ app.MapPost("/api/auth/login", async (string email, string password, IAuthServic
     bool isLogged = await authService.LoginAsync(email, password);
     return isLogged ? Results.Ok("Успішний вхід!") : Results.Unauthorized();
 });
+
+
+app.MapPost("/api/auth/refresh", () => Results.Ok("Token refreshed"));
+app.MapGet("/api/auth/confirmEmail", () => Results.Ok("Email confirmed"));
+app.MapPost("/api/auth/resendConfirmationEmail", () => Results.Ok("Confirmation email resent"));
+app.MapPost("/api/auth/forgotPassword", () => Results.Ok("Password reset link sent"));
+app.MapPost("/api/auth/resetPassword", () => Results.Ok("Password reset"));
+app.MapPost("/api/auth/manage/2fa", () => Results.Ok("2FA managed"));
+app.MapGet("/api/auth/manage/info", () => Results.Ok("Manage info retrieved"));
+app.MapPost("/api/auth/manage/info", () => Results.Ok("Manage info updated"));
 
 app.Run();
