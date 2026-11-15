@@ -19,11 +19,13 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 // Підключення сервісів
 builder.Services.AddDbContext<DB>(options => options.UseNpgsql(connectionString));
 builder.Services.AddIdentityCore<IdentityUser>().AddEntityFrameworkStores<DB>();
-
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterDtoValidator>();
+
+
+builder.Services.AddControllers();
 
 // Додаємо Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -34,6 +36,10 @@ var app = builder.Build();
 // Вмикаємо Swagger
 app.UseSwagger();
 app.UseSwaggerUI();
+
+
+app.MapControllers();
+
 
 app.MapPost("/api/auth/register", async (RegisterDto dto, IAuthService authService) =>
 {
@@ -55,4 +61,4 @@ app.MapPost("/api/auth/login", async (string email, string password, IAuthServic
     return isLogged ? Results.Ok("Успішний вхід!") : Results.Unauthorized();
 });
 
-app.Run(); 
+app.Run();
