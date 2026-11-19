@@ -1,36 +1,62 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SplitwiseClone.DTOs;
+using SplitwiseClone.Services;
 
-namespace SplitwiseClone.Controllers
+namespace SplitwiseClone.Controllers;
+
+[Authorize]
+[ApiController]
+[Route("api/[controller]")]
+public class GroupsController(IGroupService groupService, IBalanceService balanceService) : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class GroupsController : ControllerBase
+    [HttpPost]
+    public IActionResult CreateGroup([FromBody] CreateGroupDto dto)
     {
-        [HttpGet("{groupId}/balances")]
-        public IActionResult GetBalances(int groupId) => Ok();
+        var group = groupService.CreateGroup(dto, GetCurrentUserId());
+        return CreatedAtAction(nameof(GetGroupById), new { id = group.Id }, group);
+    }
 
-        [HttpPost("{groupId}/expenses")]
-        public IActionResult AddExpense(int groupId) => Ok();
+    [HttpGet]
+    public IActionResult GetGroups()
+        => Ok(groupService.GetUserGroups(GetCurrentUserId()));
 
-        [HttpGet("{groupId}/expenses")]
-        public IActionResult GetExpenses(int groupId) => Ok();
+    [HttpGet("{id:int}")]
+    public IActionResult GetGroupById(int id)
+        => Ok(groupService.GetGroupById(id, GetCurrentUserId()));
 
-        [HttpPost]
-        public IActionResult CreateGroup() => Ok();
+    [HttpPost("{id:int}/members")]
+    public IActionResult AddMember(int id, [FromBody] AddMemberDto dto)
+    {
+        groupService.AddMember(id, dto.UserId, GetCurrentUserId());
+        return NoContent();
+    }
 
-        [HttpGet]
-        public IActionResult GetGroups() => Ok();
+    [HttpPost("{groupId:int}/expenses")]
+    public IActionResult AddExpense(int groupId, [FromBody] CreateExpenseDto dto)
+        => Ok(groupService.AddExpense(groupId, dto, GetCurrentUserId()));
 
-        [HttpGet("{id}")]
-        public IActionResult GetGroupById(int id) => Ok();
+    [HttpGet("{groupId:int}/balances")]
+    public IActionResult GetBalances(int groupId)
+        => Ok(balanceService.GetGroupBalances(groupId, GetCurrentUserId()));
 
-        [HttpPost("{id}/members")]
-        public IActionResult AddMember(int id) => Ok();
+    [HttpPost("{groupId:int}/settlements")]
+    public IActionResult SettleUp(int groupId, [FromBody] CreateSettlementDto dto)
+        => Ok(groupService.SettleUp(groupId, dto, GetCurrentUserId()));
 
-        [HttpPost("{groupId}/settlements")]
-        public IActionResult AddSettlement(int groupId) => Ok();
+    private int GetCurrentUserId()
+    {
+        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(claim))
+            throw new UnauthorizedAccessException("User ID claim is missing.");
 
-        [HttpGet("{groupId}/settlements")]
-        public IActionResult GetSettlements(int groupId) => Ok();
+        if (int.TryParse(claim, out var userId))
+            return userId;
+
+        if (Guid.TryParse(claim, out var guid))
+            return BitConverter.ToInt32(guid.ToByteArray(), 0) & 0x7FFFFFFF;
+
+        throw new UnauthorizedAccessException("Invalid User ID claim.");
     }
 }

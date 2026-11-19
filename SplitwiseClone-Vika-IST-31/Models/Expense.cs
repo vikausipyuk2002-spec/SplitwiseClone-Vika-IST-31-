@@ -8,13 +8,13 @@ public class Expense
 
     public decimal Amount { get; set; }
 
-    public DateTime Date { get; set; }
+    public DateTime Date { get; set; } = DateTime.UtcNow;
 
-    public int GroupId { get; set; }
+    public bool IsPayment { get; set; }
 
-    public int PaidByUserId { get; set; }
+    public int? GroupId { get; set; }
 
     public Group? Group { get; set; }
 
-    public User? PaidByUser { get; set; }
+    public ICollection<ExpenseParticipant> Participants { get; set; } = new List<ExpenseParticipant>();
 }

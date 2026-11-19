@@ -8,7 +8,9 @@ public class ExpenseParticipant
 
     public int UserId { get; set; }
 
-    public decimal ShareAmount { get; set; }
+    public decimal PaidShare { get; set; }
+
+    public decimal OwedShare { get; set; }
 
     public Expense? Expense { get; set; }
 
